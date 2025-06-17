@@ -7,18 +7,31 @@ import de.maxhenkel.admiral.annotations.Name;
 import de.maxhenkel.admiral.annotations.RequiresPermission;
 import de.maxhenkel.audioplayer.AudioManager;
 import de.maxhenkel.audioplayer.AudioPlayer;
+import de.maxhenkel.audioplayer.CustomSound;
 import de.maxhenkel.audioplayer.Filebin;
+import de.maxhenkel.audioplayer.PlayerType;
 import de.maxhenkel.audioplayer.webserver.UrlUtils;
 import de.maxhenkel.audioplayer.webserver.WebServer;
 import de.maxhenkel.audioplayer.webserver.WebServerEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.*;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.InstrumentItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.ShulkerBoxBlock; // Added import
+import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity; // Added import
+import net.minecraft.nbt.CompoundTag; // Added import
+import net.minecraft.nbt.ListTag; // Added import
+import net.minecraft.nbt.Tag; // Added import
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.net.UnknownHostException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Optional; // Added import
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -151,6 +164,46 @@ public class UploadCommands {
     }
 
     @RequiresPermission("audioplayer.upload")
+    @Command("urlwithname")
+    public void urlUploadWithName(CommandContext<CommandSourceStack> context, @Name("url") String url, @Name("custom_name") String customName) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException(); // Added player object
+        ItemStack itemInHand = player.getItemInHand(InteractionHand.MAIN_HAND); // Get item in hand
+
+        PlayerType type = PlayerType.fromItemStack(itemInHand); // Check player type
+        if (type == null) { // If not valid item, send message and return
+            sendInvalidHandItemMessage(context, itemInHand); // Call send invalid message
+            return; // Return
+        }
+
+        UUID sound = UUID.randomUUID();
+        new Thread(() -> {
+            try {
+                context.getSource().sendSuccess(() -> Component.literal("Downloading sound, please wait..."), false);
+                AudioManager.saveSound(context.getSource().getServer(), sound, url);
+
+                // Apply the sound to the item and set custom name
+                CustomSound customSound = new CustomSound(sound, null, false); // Create custom sound
+                ApplyCommands.applyToItem(context, itemInHand, type, customSound, customName); // Apply to item with custom name
+
+                context.getSource().sendSuccess(() -> sendUUIDMessage(sound, Component.literal("Successfully downloaded and applied sound with name '%s'.".formatted(customName))), false);
+            } catch (UnknownHostException e) {
+                AudioPlayer.LOGGER.warn("{} failed to download a sound: {}", context.getSource().getTextName(), e.toString());
+                context.getSource().sendFailure(Component.literal("Failed to download sound: Unknown host"));
+            } catch (UnsupportedAudioFileException e) {
+                AudioPlayer.LOGGER.warn("{} failed to download a sound: {}", context.getSource().getTextName(), e.toString());
+                context.getSource().sendFailure(Component.literal("Failed to download sound: Invalid file format"));
+            } catch (CommandSyntaxException e) { // Catch CommandSyntaxException from applyToItem
+                AudioPlayer.LOGGER.warn("{} failed to apply sound: {}", context.getSource().getTextName(), e.getMessage());
+                context.getSource().sendFailure(Component.literal("Failed to apply sound: %s".formatted(e.getMessage())));
+            } catch (Exception e) {
+                AudioPlayer.LOGGER.warn("{} failed to download or apply a sound: {}", context.getSource().getTextName(), e.toString());
+                context.getSource().sendFailure(Component.literal("Failed to download or apply sound: %s".formatted(e.getMessage())));
+            }
+        }).start();
+    }
+
+
+    @RequiresPermission("audioplayer.upload")
     @Command("web")
     public void web(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         WebServer webServer = WebServerEvents.getWebServer();
@@ -265,4 +318,12 @@ public class UploadCommands {
                 );
     }
 
+    // Helper method from ApplyCommands.java to avoid code duplication
+    private static void sendInvalidHandItemMessage(CommandContext<CommandSourceStack> context, ItemStack invalidItem) {
+        if (invalidItem.isEmpty()) {
+            context.getSource().sendFailure(Component.literal("You don't have an item in your main hand"));
+            return;
+        }
+        context.getSource().sendFailure(Component.literal("The item in your main hand can not have custom audio"));
+    }
 }
