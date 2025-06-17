@@ -1,0 +1,39 @@
+name: Build Fabric Mod
+
+on:
+  push:
+    branches:
+      - master # or main, depending on your default branch name
+  pull_request:
+    branches:
+      - master # or main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17' # Or your target JDK version for Minecraft 1.20.1
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    - name: Make Gradle Wrapper Executable
+      run: chmod +x gradlew
+
+    - name: Build with Gradle
+      run: ./gradlew build
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Fabric-Mod-Build
+        path: |
+          build/libs/*.jar # Adjust this path if your build output is different
+          !build/libs/*-sources.jar # Exclude source jars if you don't need them
+          !build/libs/*-dev.jar # Exclude dev jars
