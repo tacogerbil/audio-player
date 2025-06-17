@@ -102,7 +102,7 @@ public class ApplyCommands {
             sendInvalidHandItemMessage(context, itemInHand);
             return;
         }
-        apply(context, itemInHand, type, sound, customName);
+        applyToItem(context, itemInHand, type, sound, customName); // Renamed private method to be public
     }
 
     @RequiresPermission("audioplayer.set_static")
@@ -148,13 +148,13 @@ public class ApplyCommands {
             if (playerType == null) {
                 continue;
             }
-            apply(context, itemStack, playerType, sound, customName);
+            applyToItem(context, itemStack, playerType, sound, customName); // Call to public static method
             currentItem.put("tag", itemStack.getOrCreateTag());
         }
         context.getSource().sendSuccess(() -> Component.literal("Successfully updated contents"), false);
     }
 
-    private static void apply(CommandContext<CommandSourceStack> context, ItemStack stack, PlayerType type, CustomSound customSound, @Nullable String customName) throws CommandSyntaxException {
+    public static void applyToItem(CommandContext<CommandSourceStack> context, ItemStack stack, PlayerType type, CustomSound customSound, @Nullable String customName) throws CommandSyntaxException { // Made method public static
         checkRange(type.getMaxRange(), customSound.getRange().orElse(null));
         if (!type.isValid(stack)) {
             return;
