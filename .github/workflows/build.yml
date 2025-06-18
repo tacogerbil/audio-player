@@ -3,10 +3,10 @@ name: Build Fabric Mod
 on:
   push:
     branches:
-      - master # or main, depending on your default branch name
+      - 1.20.1 # or main, depending on your default branch name
   pull_request:
     branches:
-      - master # or main
+      - 1.20.1 # or main
 
 jobs:
   build:
