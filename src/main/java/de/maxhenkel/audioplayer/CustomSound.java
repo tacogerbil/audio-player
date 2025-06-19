@@ -106,39 +106,57 @@ public class CustomSound {
     }
 
     public void saveToItemIgnoreLore(ItemStack stack) {
-        saveToItem(stack, null, false);
+        saveToItem(stack, null, null, false);
     }
 
     public void saveToItem(ItemStack stack) {
-        saveToItem(stack, null);
+        saveToItem(stack, null, null, true);
     }
 
-    public void saveToItem(ItemStack stack, @Nullable String loreString) {
-        saveToItem(stack, loreString, true);
+    public void saveToItem(ItemStack stack, @Nullable String customName) {
+        saveToItem(stack, customName, null, true);
+    }
+    
+    // New method to be called from your command to include the player's name
+    public void saveToItem(ItemStack stack, @Nullable String customName, String playerName) {
+        saveToItem(stack, customName, playerName, true);
     }
 
-    private void saveToItem(ItemStack stack, @Nullable String loreString, boolean applyLore) {
+    private void saveToItem(ItemStack stack, @Nullable String customName, @Nullable String playerName, boolean applyLore) {
         CompoundTag tag = stack.getOrCreateTag();
         saveToNbt(tag);
-        ListTag lore = new ListTag();
+
         if (stack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof SkullBlock) {
             CompoundTag blockEntityTag = stack.getOrCreateTagElement(BlockItem.BLOCK_ENTITY_TAG);
             saveToNbt(blockEntityTag);
-            if (loreString == null) {
-                lore.add(0, StringTag.valueOf(Component.Serializer.toJson(Component.literal(DEFAULT_HEAD_LORE).withStyle(style -> style.withItalic(false)).withStyle(ChatFormatting.GRAY))));
-            }
+        }
+        
+        if (!applyLore) {
+            return;
         }
 
-        if (loreString != null) {
-            lore.add(0, StringTag.valueOf(Component.Serializer.toJson(Component.literal(loreString).withStyle(style -> style.withItalic(false)).withStyle(ChatFormatting.GRAY))));
+        // Get or create the main 'display' NBT tag
+        CompoundTag display = stack.getOrCreateTagElement(ItemStack.TAG_DISPLAY);
+        ListTag lore = new ListTag();
+
+        // Set the custom name if one was provided
+        if (customName != null) {
+            display.putString(ItemStack.TAG_DISPLAY_NAME, Component.Serializer.toJson(Component.literal(customName).withStyle(ChatFormatting.RESET)));
         }
 
-        CompoundTag display = new CompoundTag();
+        // Generate the dynamic lore text
+        String loreText;
+        if (playerName != null) {
+            loreText = "Custom music disc pressed by %s!".formatted(playerName);
+        } else {
+            loreText = DEFAULT_HEAD_LORE;
+        }
+        lore.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal(loreText).withStyle(style -> style.withItalic(false)).withStyle(ChatFormatting.GRAY))));
+
+        // Apply the lore list to the display tag
         display.put(ItemStack.TAG_LORE, lore);
-        if (applyLore) {
-            tag.put(ItemStack.TAG_DISPLAY, display);
-        }
 
+        // Hide the internal NBT data from the tooltip
         tag.putInt("HideFlags", ItemStack.TooltipPart.ADDITIONAL.getMask());
     }
 
