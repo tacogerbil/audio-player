@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class BlankDiscItemMixin {
 
     // Define the tag for blank discs
-    private static final TagKey<Item> BLANK_DISCS_TAG = TagKey.create(net.minecraft.core.registries.Registries.ITEM, new ResourceLocation("blank_discs", "blank_discs")); // Created TagKey
+    private static final TagKey<Item> BLANK_DISCS_TAG = TagKey.create(net.minecraft.core.registries.Registries.ITEM, new ResourceLocation("forge", "blank_discs")); // Created TagKey
 
     @Inject(method = "use", at = @At("HEAD"), cancellable = true)
     public void audioplayer_onUse(Level level, Player player, InteractionHand interactionHand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
