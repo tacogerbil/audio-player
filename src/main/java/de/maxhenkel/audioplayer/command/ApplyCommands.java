@@ -159,7 +159,7 @@ public class ApplyCommands {
         if (!type.isValid(stack)) {
             return;
         }
-        customSound.saveToItem(stack, customName);
+        customSound.saveToItem(stack, customName, context.getSource().getPlayerOrException().getName().getString());
         CompoundTag tag = stack.getOrCreateTag();
 
         if (stack.getItem() instanceof InstrumentItem) {
