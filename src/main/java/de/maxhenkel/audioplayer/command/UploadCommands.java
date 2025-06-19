@@ -185,7 +185,8 @@ public class UploadCommands {
                 CustomSound customSound = new CustomSound(sound, null, false); // Create custom sound
                 ApplyCommands.applyToItem(context, itemInHand, type, customSound, customName); // Apply to item with custom name
 
-                context.getSource().sendSuccess(() -> sendUUIDMessage(sound, Component.literal("Successfully downloaded and applied sound with name '%s'.".formatted(customName))), false);
+                // SENDS A CLEAN SUCCESS MESSAGE INSTEAD OF THE BUTTONS
+                context.getSource().sendSuccess(() -> Component.literal("Successfully applied sound '%s' to the disc.".formatted(customName)), false);
             } catch (UnknownHostException e) {
                 AudioPlayer.LOGGER.warn("{} failed to download a sound: {}", context.getSource().getTextName(), e.toString());
                 context.getSource().sendFailure(Component.literal("Failed to download sound: Unknown host"));
